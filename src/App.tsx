@@ -4,6 +4,7 @@ import { Button, Card, Input, Radio } from "antd";
 
 function App() {
   const [unisatInstalled, setUnisatInstalled] = useState(false);
+  const [showInscriptionCard, setShowInscriptionCard] = useState(false);
   const [connected, setConnected] = useState(false);
   const [accounts, setAccounts] = useState<string[]>([]);
   const [publicKey, setPublicKey] = useState("");
@@ -98,7 +99,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <p>Unisat Wallet Demo</p>
+        <p>BTC Machine Dispenser</p>
 
         {connected ? (
           <div
@@ -119,41 +120,15 @@ function App() {
               </div>
 
               <div style={{ textAlign: "left", marginTop: 10 }}>
-                <div style={{ fontWeight: "bold" }}>PublicKey:</div>
-                <div style={{ wordWrap: "break-word" }}>{publicKey}</div>
-              </div>
-
-              <div style={{ textAlign: "left", marginTop: 10 }}>
                 <div style={{ fontWeight: "bold" }}>Balance: (Satoshis)</div>
                 <div style={{ wordWrap: "break-word" }}>{balance.total}</div>
               </div>
             </Card>
 
-            <Card
-              size="small"
-              title="Switch Network"
-              style={{ width: 300, margin: 10 }}
-            >
-              <div style={{ textAlign: "left", marginTop: 10 }}>
-                <div style={{ fontWeight: "bold" }}>Network:</div>
-                <Radio.Group
-                  onChange={async (e) => {
-                    const network = await unisat.switchNetwork(e.target.value);
-                    setNetwork(network);
-                  }}
-                  value={network}
-                >
-                  <Radio value={"livenet"}>livenet</Radio>
-                  <Radio value={"testnet"}>testnet</Radio>
-                </Radio.Group>
-              </div>
-            </Card>
+            
 
-            <SignPsbtCard />
-            <SignMessageCard />
-            <PushTxCard />
-            <PushPsbtCard />
-            <SendBitcoin />
+            <ClaimBTCMCard address={address} />
+           
           </div>
         ) : (
           <div>
@@ -171,6 +146,73 @@ function App() {
     </div>
   );
 }
+
+interface ClaimBTCMCardProps {
+  address: string;
+}
+
+function ClaimBTCMCard({ address }: ClaimBTCMCardProps) {
+  const [message, setMessage] = useState(`Claiming BTCM for ${address}`);
+  const [signature, setSignature] = useState("");
+  const [inscriptionData, setInscriptionData] = useState("");
+  const [bitcoinAmount, setBitcoinAmount] = useState(0);
+
+  useEffect(() => {
+    setMessage(`Claiming BTCM for ${address}`);
+  }, [address]);
+
+  const claimDrop = async () => {
+    const response = await fetch(`${process.env.REACT_APP_SERVER_URL}/claim`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        address,
+        signature,
+      }),
+    });
+
+    const jsonResponse = await response.json();
+    setInscriptionData(jsonResponse.inscription_id);
+    setBitcoinAmount(jsonResponse.bitcoin_amount);
+  };
+
+  return (
+    <Card
+      size="small"
+      title="Claim BTCM"
+      style={{ width: 300, margin: 10 }}
+    >
+      <div style={{ textAlign: "left", marginTop: 10 }}>
+        <div style={{ fontWeight: "bold" }}>Message:</div>
+        <Input
+          defaultValue={message}
+          onChange={(e) => {
+            setMessage(e.target.value);
+          }}
+        ></Input>
+      </div>
+      <div style={{ textAlign: "left", marginTop: 10 }}>
+        <div style={{ fontWeight: "bold" }}>Signature:</div>
+        <div style={{ wordWrap: "break-word" }}>{signature}</div>
+      </div>
+      <Button
+        style={{ marginTop: 10 }}
+        onClick={async () => {
+          const signature = await (window as any).unisat.signMessage(message);
+          setSignature(signature);
+          claimDrop();
+        }}
+      >
+        Claim BTCM
+      </Button>
+    </Card>
+  );
+}
+
+
+
 
 function SignPsbtCard() {
   const [psbtHex, setPsbtHex] = useState("");
