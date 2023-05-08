@@ -7,6 +7,7 @@ function App() {
   const [showInscriptionCard, setShowInscriptionCard] = useState(false);
   const [connected, setConnected] = useState(false);
   const [accounts, setAccounts] = useState<string[]>([]);
+  const [inscriptionCard, setInscriptionCard] = useState<{inscriptionId: string, psbt: string} | null>(null);
   const [publicKey, setPublicKey] = useState("");
   const [address, setAddress] = useState("");
   const [balance, setBalance] = useState({
@@ -97,6 +98,7 @@ function App() {
   }
   const unisat = (window as any).unisat;
   return (
+    <div className="app-container">
     <div className="App">
       <header className="App-header">
         <p>BTC Machine Dispenser</p>
@@ -112,7 +114,8 @@ function App() {
             <Card
               size="small"
               title="Basic Info"
-              style={{ width: 300, margin: 10 }}
+              className="card-container"
+              style={{ width: 500, margin: 10, paddingLeft: 7}}
             >
               <div style={{ textAlign: "left", marginTop: 10 }}>
                 <div style={{ fontWeight: "bold" }}>Address:</div>
@@ -128,6 +131,7 @@ function App() {
             
 
             <ClaimBTCMCard address={address} />
+            
            
           </div>
         ) : (
@@ -144,70 +148,154 @@ function App() {
         )}
       </header>
     </div>
+  </div>
   );
 }
 
+
+
 interface ClaimBTCMCardProps {
   address: string;
+
 }
 
+
 function ClaimBTCMCard({ address }: ClaimBTCMCardProps) {
-  const [message, setMessage] = useState(`Claiming BTCM for ${address}`);
+  const [message, setMessage] = useState("ClaimZBIT");
   const [signature, setSignature] = useState("");
-  const [inscriptionData, setInscriptionData] = useState("");
+  const [inscriptionId, setInscriptionId] = useState("");
   const [bitcoinAmount, setBitcoinAmount] = useState(0);
+  const [inscriptionImage, setInscriptionImage] = useState<string | null>("");
+  const [PSBT, setPSBTbutton]= useState("");
+  const [psbtResult, setPsbtResult] = useState("");
+  const [inscriptionJson, setInscriptionJson] = useState(null);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+
+  //const [inscriptionJson, setInscriptionJson] = useState<any>(null); // Add this line
 
   useEffect(() => {
-    setMessage(`Claiming BTCM for ${address}`);
+    setMessage("ClaimZBIT");
   }, [address]);
 
-  const claimDrop = async () => {
-    const response = await fetch(`${process.env.REACT_APP_SERVER_URL}/claim`, {
+  const claimDrop = async (signature: string) => {
+    const response = await fetch(`${process.env.REACT_APP_SERVER_URL}/api/claim`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "X-API-KEY": process.env.REACT_APP_API_KEY as string,
       },
       body: JSON.stringify({
         address,
         signature,
+        message,
       }),
     });
-
+  
     const jsonResponse = await response.json();
-    setInscriptionData(jsonResponse.inscription_id);
-    setBitcoinAmount(jsonResponse.bitcoin_amount);
+    const inscriptionId = jsonResponse.data.inscription_id;
+    const PSBT = jsonResponse.data.PSBT;
+    setInscriptionId(inscriptionId);
+    setPSBTbutton(PSBT);
   };
+  const ordinalsImagesUrl = "https://cdn.ordiscan.com/inscriptions%2F";
 
-  return (
-    <Card
-      size="small"
-      title="Claim BTCM"
-      style={{ width: 300, margin: 10 }}
-    >
-      <div style={{ textAlign: "left", marginTop: 10 }}>
-        <div style={{ fontWeight: "bold" }}>Message:</div>
-        <Input
-          defaultValue={message}
-          onChange={(e) => {
-            setMessage(e.target.value);
-          }}
-        ></Input>
-      </div>
-      <div style={{ textAlign: "left", marginTop: 10 }}>
-        <div style={{ fontWeight: "bold" }}>Signature:</div>
-        <div style={{ wordWrap: "break-word" }}>{signature}</div>
-      </div>
-      <Button
-        style={{ marginTop: 10 }}
-        onClick={async () => {
-          const signature = await (window as any).unisat.signMessage(message);
-          setSignature(signature);
-          claimDrop();
+  useEffect(() => {
+    const fetchInscriptionImage = async () => {
+      if (inscriptionId) {
+        setIsImageLoaded(false);
+        const imageUrl = `${ordinalsImagesUrl}${inscriptionId}`;
+        setInscriptionImage(imageUrl);
+      }
+    };
+    fetchInscriptionImage();
+  }, [inscriptionId]);
+
+  const renderInscriptionContent = () => {
+    if (inscriptionImage) {
+      return (
+        <img
+        src={inscriptionImage}
+        alt="Inscription"
+        style={{ width: "100%", height: "auto", display: isImageLoaded ? "block" : "none" }}
+        onLoad={() => {
+          setIsImageLoaded(true);
         }}
-      >
-        Claim BTCM
-      </Button>
-    </Card>
+        onError={async () => {
+            try {
+              const response = await fetch(`${ordinalsImagesUrl}${inscriptionId}`);
+              if (response.ok) {
+                const jsonResponse = await response.json();
+                setInscriptionJson(jsonResponse);
+                setInscriptionImage(null);
+              }
+            } catch (error) {
+              console.error("Failed to fetch JSON content:", error);
+            }
+          }}
+        />
+      );
+    } else if (inscriptionJson) {
+      return (
+        <pre style={{ whiteSpace: "pre-wrap", wordWrap: "break-word", maxHeight: 200, overflowY: "auto" }}>
+          {JSON.stringify(inscriptionJson, null, 2)}
+        </pre>
+      );
+    }
+  };
+  return (
+    <>
+      <Card size="small" title="Claim ZBIT" className="card-container" style={{ width: 300, margin: 10 }}>
+        <div style={{ textAlign: "left", marginTop: 10 }}>
+          <div style={{ fontWeight: "bold" }}>Message:</div>
+          <Input
+            defaultValue={message}
+            onChange={(e) => {
+              setMessage(e.target.value);
+            }}
+          ></Input>
+        </div>
+
+        <Button
+          style={{ marginTop: 10 }}
+          onClick={async () => {
+            const signature = await (window as any).unisat.signMessage(message, "bip322-simple");
+            setSignature(signature);
+            claimDrop(signature);
+          }}
+        >
+          Claim ZBIT
+        </Button>
+      </Card>
+      {inscriptionId && (
+       <Card
+       size="small"
+       title="Inscription ID"
+       className="card-container"
+       style={{ width: 300, margin: 10 }}
+     >
+       <div style={{ textAlign: "left", marginTop: 10 }}>
+         <div style={{ fontWeight: "bold" }}>InscriptionId:</div>
+         <div style={{ wordWrap: "break-word" }}>{inscriptionId}</div>
+       </div>
+       <div style={{ marginTop: 10 }}>{renderInscriptionContent()}</div>
+       {PSBT && (
+            <Button
+              style={{ marginTop: 10 }}
+              onClick={async () => {
+                try {
+                  const psbtResult = await (window as any).unisat.signPsbt(PSBT);
+                  console.log("Signed PSBT:", psbtResult);
+                } catch (e) {
+                  setPsbtResult((e as any).message);
+                }
+              }}
+            >
+              Sign Psbt
+            </Button>
+          )}
+     </Card>
+      )}
+    </>
   );
 }
 
@@ -270,6 +358,7 @@ function SignMessageCard() {
       <Button
         style={{ marginTop: 10 }}
         onClick={async () => {
+        
           const signature = await (window as any).unisat.signMessage(message);
           setSignature(signature);
         }}
