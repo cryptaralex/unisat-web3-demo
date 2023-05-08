@@ -98,10 +98,13 @@ function App() {
   }
   const unisat = (window as any).unisat;
   return (
+<div>
+    <div className="background-image"></div>
     <div className="app-container">
+   
     <div className="App">
       <header className="App-header">
-        <p>BTC Machine Dispenser</p>
+        <p style={{width: 1000, marginTop: 20, marginLeft: 60, position: 'fixed', top: '100px', left: '50px'}}>BTC Machine Dispenser</p>
 
         {connected ? (
           <div
@@ -113,9 +116,9 @@ function App() {
           >
             <Card
               size="small"
-              title="Basic Info"
               className="card-container"
-              style={{ width: 500, margin: 10, paddingLeft: 7}}
+              style={{border: 'none', width: 495, marginTop: 175, marginLeft: 347, position: 'fixed', top: '100px', left: '50px' }}
+
             >
               <div style={{ textAlign: "left", marginTop: 10 }}>
                 <div style={{ fontWeight: "bold" }}>Address:</div>
@@ -137,6 +140,8 @@ function App() {
         ) : (
           <div>
             <Button
+              className="retro-button"
+              style={{ marginTop: 400,marginLeft:485, position:'fixed',left:10}}
               onClick={async () => {
                 const result = await unisat.requestAccounts();
                 handleAccountsChanged(result);
@@ -147,7 +152,14 @@ function App() {
           </div>
         )}
       </header>
+      <FloatingHeart positionType="left" x="5%" y="10%" />
+      <FloatingHeart positionType="right" x="5%" y="13%" />
+
+
+      <FloatingCoin x="10%" y="60%" />
+      <FloatingCoin x="80%" y="50%" />
     </div>
+  </div>
   </div>
   );
 }
@@ -158,6 +170,30 @@ interface ClaimBTCMCardProps {
   address: string;
 
 }
+interface FloatingHeartProps {
+  x: string;
+  y: string;
+  positionType: 'left' | 'right';
+}
+
+const FloatingHeart: React.FC<FloatingHeartProps> = ({ x, y, positionType }) => (
+  <div
+    className="floating-heart"
+    style={{ [positionType]: x, top: y }}
+  ></div>
+);
+
+interface FloatingCoinProps {
+  x: string;
+  y: string;
+}
+
+const FloatingCoin: React.FC<FloatingCoinProps> = ({ x, y }) => (
+  <div
+    className="floating-coin"
+    style={{ left: x, top: y }}
+  ></div>
+);
 
 
 function ClaimBTCMCard({ address }: ClaimBTCMCardProps) {
@@ -170,6 +206,9 @@ function ClaimBTCMCard({ address }: ClaimBTCMCardProps) {
   const [psbtResult, setPsbtResult] = useState("");
   const [inscriptionJson, setInscriptionJson] = useState(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [txid, setTxid] = useState("");
+
 
   //const [inscriptionJson, setInscriptionJson] = useState<any>(null); // Add this line
 
@@ -192,12 +231,18 @@ function ClaimBTCMCard({ address }: ClaimBTCMCardProps) {
     });
   
     const jsonResponse = await response.json();
-    const inscriptionId = jsonResponse.data.inscription_id;
-    const PSBT = jsonResponse.data.PSBT;
-    setInscriptionId(inscriptionId);
-    setPSBTbutton(PSBT);
+    if (response.status === 200) {
+      const inscriptionId = jsonResponse.data.inscription_id;
+      const PSBT = jsonResponse.data.PSBT;
+      setInscriptionId(inscriptionId);
+      setPSBTbutton(PSBT);
+    } else if (response.status === 404) {
+      setStatusMessage("Not eligible");
+    } else if (response.status === 500) {
+      setStatusMessage("Unauthorized");
+    }
   };
-  const ordinalsImagesUrl = "https://cdn.ordiscan.com/inscriptions%2F";
+  const ordinalsImagesUrl = "https://ordapi.xyz/content/";
 
   useEffect(() => {
     const fetchInscriptionImage = async () => {
@@ -244,10 +289,13 @@ function ClaimBTCMCard({ address }: ClaimBTCMCardProps) {
   };
   return (
     <>
-      <Card size="small" title="Claim ZBIT" className="card-container" style={{ width: 300, margin: 10 }}>
+      {!inscriptionId && statusMessage === "" && txid ==="" && (
+      <Card size="small" className="card-container" style={{border: 'none', width: 300, marginTop: 350, marginLeft: 440, position: 'fixed', top: '100px', left: '50px' }}>
         <div style={{ textAlign: "left", marginTop: 10 }}>
-          <div style={{ fontWeight: "bold" }}>Message:</div>
+          <div style={{ fontWeight: "bold" }}>Sign Message to claim:</div>
           <Input
+            className="retro-input"
+            disabled
             defaultValue={message}
             onChange={(e) => {
               setMessage(e.target.value);
@@ -256,6 +304,7 @@ function ClaimBTCMCard({ address }: ClaimBTCMCardProps) {
         </div>
 
         <Button
+          className="retro-button"
           style={{ marginTop: 10 }}
           onClick={async () => {
             const signature = await (window as any).unisat.signMessage(message, "bip322-simple");
@@ -266,13 +315,12 @@ function ClaimBTCMCard({ address }: ClaimBTCMCardProps) {
           Claim ZBIT
         </Button>
       </Card>
-      {inscriptionId && (
-       <Card
-       size="small"
-       title="Inscription ID"
-       className="card-container"
-       style={{ width: 300, margin: 10 }}
-     >
+      )}
+      {inscriptionId && txid ==="" && (
+      
+      
+       <Card size="small" className="card-container" style={{border: 'none', width: 300, marginTop: 320, marginLeft: 440, position: 'fixed', top: '100px', left: '50px' }}>
+     
        <div style={{ textAlign: "left", marginTop: 10 }}>
          <div style={{ fontWeight: "bold" }}>InscriptionId:</div>
          <div style={{ wordWrap: "break-word" }}>{inscriptionId}</div>
@@ -280,13 +328,17 @@ function ClaimBTCMCard({ address }: ClaimBTCMCardProps) {
        <div style={{ marginTop: 10 }}>{renderInscriptionContent()}</div>
        {PSBT && (
             <Button
+              className="retro-button"
               style={{ marginTop: 10 }}
               onClick={async () => {
                 try {
                   const psbtResult = await (window as any).unisat.signPsbt(PSBT);
                   console.log("Signed PSBT:", psbtResult);
+                  const txid = await (window as any).unisat.pushPsbt(psbtResult);
+                  setTxid(txid);
+    
                 } catch (e) {
-                  setPsbtResult((e as any).message);
+                  setTxid((e as any).message);
                 }
               }}
             >
@@ -294,6 +346,21 @@ function ClaimBTCMCard({ address }: ClaimBTCMCardProps) {
             </Button>
           )}
      </Card>
+      )} 
+      {statusMessage === "Not eligible" && (
+        <Card size="small" className="card-container" style={{border: 'none', width: 300, marginTop: 350, marginLeft: 440, position: 'fixed', top: '100px', left: '50px' }} >
+       <h3>Address not eligble</h3>
+        </Card>
+      )}
+      {statusMessage === "Unauthorized" && (
+        <Card size="small"  className="card-container" style={{border: 'none', width: 300, marginTop: 350, marginLeft: 440, position: 'fixed', top: '100px', left: '50px' }} >
+       <h3>Bad Signature</h3>
+          </Card>
+      )}
+      {txid && (
+        <Card size="small"  className="card-container" style={{border: 'none', width: 300, marginTop: 350, marginLeft: 440, position: 'fixed', top: '100px', left: '50px' }} >
+       <h3>{txid}</h3>
+          </Card>
       )}
     </>
   );
@@ -305,6 +372,7 @@ function ClaimBTCMCard({ address }: ClaimBTCMCardProps) {
 function SignPsbtCard() {
   const [psbtHex, setPsbtHex] = useState("");
   const [psbtResult, setPsbtResult] = useState("");
+  
   return (
     <Card size="small" title="Sign Psbt" style={{ width: 300, margin: 10 }}>
       <div style={{ textAlign: "left", marginTop: 10 }}>

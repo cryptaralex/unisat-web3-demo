@@ -3,19 +3,111 @@
 }
 
 .app-container {
+  position: relative;
+  min-height: 100vh;
+  font-family: 'Press Start 2P', cursive;
+ 
+}
+.retro-button {
+  background-color: #32CD32;
+  border: 2px solid #008000;
+  color: #008000;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
+  padding: 8px 16px;
+  margin: 10px 2px;
+  cursor: pointer;
+  transition-duration: 0.4s;
+}
+.retro-input {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
+  color: #008000;
+  background-color: #32CD32;
+  border: 2px solid #008000;
+  padding: 4px 8px;
+}
+
+.retro-input::placeholder {
+  color: #008000;
+  opacity: 1;
+}
+
+.retro-button:hover {
+  background-color: #00FF00;
+  border-color: #006400;
+  color: #006400;
+}
+.ant-card-head{
+  color:lawngreen;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-30px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes float2 {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-100px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+.floating-coin {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  animation: float2 3s ease-in-out infinite;
+  background-image: url('./floatingcoin.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+.floating-heart {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  animation: float 3s ease-in-out infinite;
+  background-image: url('./pixelhearts.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+.background-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 1200px;
+  height:1000px;
+  margin-left:-40px;
   background-image: url('./background.png');
   background-repeat: no-repeat;
   background-position: center;
-  background-attachment: fixed;
-  min-height: 100vh;
-  font-family: 'Press Start 2P', cursive;
-  padding-left: 7em;
+  background-size: cover;
+  background-color:#000000;
+  z-index: 0;
 }
-
 .card-container {
-  width: 300px;
+  width: 280px;
   margin: 10px;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0);
+  font-family: 'Press Start 2P';
+  font-size: x-small;
+  color:lawngreen;
   
 }
 .App-logo {
